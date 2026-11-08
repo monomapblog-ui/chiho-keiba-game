@@ -2,9 +2,16 @@
 ## 見た目はまだ仮(色付き四角)。操作感の検証が目的のプロトタイプ。
 extends Node2D
 
-const TRACK_PIXELS_PER_METER := 0.6
-const LANE_PIXELS := 28.0
-const TRACK_TOP := 80.0
+const TRACK_PIXELS_PER_METER := 0.8
+const LANE_PIXELS := 60.0
+const TRACK_TOP := 220.0
+const HORSE_SIZE := Vector2(40, 26)
+const HORSE_COLORS := [
+	Color(0.95, 0.15, 0.15),  # プレイヤー: 赤
+	Color(0.95, 0.75, 0.1),   # CPU1: 黄
+	Color(0.15, 0.75, 0.95),  # CPU2: 水色
+	Color(0.5, 0.9, 0.25),    # CPU3: 緑
+]
 
 var world: RaceWorld
 var rng := RandomNumberGenerator.new()
@@ -13,14 +20,39 @@ var player_effort := 0.65
 var player_lane := 2.0
 
 var horse_nodes: Array = []
+var horse_name_labels: Array = []
 var hud_labels: Dictionary = {}
 var race_finished := false
 
 func _ready() -> void:
 	rng.randomize()
 	_build_world()
+	_build_track_background()
 	_build_visuals()
 	_build_hud()
+
+func _build_track_background() -> void:
+	var track_w: float = world.track.distance_m * TRACK_PIXELS_PER_METER
+	var track_h: float = world.track.lane_count * LANE_PIXELS
+
+	var ground := ColorRect.new()
+	ground.position = Vector2(0, TRACK_TOP - 10.0)
+	ground.size = Vector2(track_w, track_h + 20.0)
+	ground.color = Color(0.45, 0.32, 0.18)  # ダート(土)をイメージした色
+	add_child(ground)
+
+	for lane_i in range(world.track.lane_count + 1):
+		var line := ColorRect.new()
+		line.position = Vector2(0, TRACK_TOP + lane_i * LANE_PIXELS)
+		line.size = Vector2(track_w, 1.0)
+		line.color = Color(1, 1, 1, 0.2)
+		add_child(line)
+
+	var finish := ColorRect.new()
+	finish.position = Vector2(track_w, TRACK_TOP - 10.0)
+	finish.size = Vector2(4.0, track_h + 20.0)
+	finish.color = Color(1, 1, 1, 0.9)
+	add_child(finish)
 
 func _build_world() -> void:
 	var track := TrackPresets.kochi()
@@ -47,10 +79,16 @@ func _make_horse(p_name: String, jockey: String, spd: int, sta: int, pw: int, gu
 func _build_visuals() -> void:
 	for i in world.horses.size():
 		var box := ColorRect.new()
-		box.size = Vector2(20, 14)
-		box.color = Color(0.9, 0.2, 0.2) if i == 0 else Color(0.3, 0.3, 0.8)
+		box.size = HORSE_SIZE
+		box.color = HORSE_COLORS[i % HORSE_COLORS.size()]
 		add_child(box)
 		horse_nodes.append(box)
+
+		var name_lbl := Label.new()
+		name_lbl.text = world.horses[i].stats.display_name
+		name_lbl.add_theme_color_override("font_color", box.color)
+		add_child(name_lbl)
+		horse_name_labels.append(name_lbl)
 
 func _build_hud() -> void:
 	var layer := CanvasLayer.new()
@@ -123,7 +161,11 @@ func _update_visuals() -> void:
 	for i in world.horses.size():
 		var h: HorseRuntime = world.horses[i]
 		var node: ColorRect = horse_nodes[i]
-		node.position = Vector2(h.position_m * TRACK_PIXELS_PER_METER, TRACK_TOP + h.lane_cur * LANE_PIXELS)
+		var pos := Vector2(h.position_m * TRACK_PIXELS_PER_METER, TRACK_TOP + h.lane_cur * LANE_PIXELS - HORSE_SIZE.y * 0.5)
+		node.position = pos
+
+		var name_lbl: Label = horse_name_labels[i]
+		name_lbl.position = pos + Vector2(0, -18)
 
 		var lbl: Label = hud_labels[i]
 		var tag := " (あなた)" if i == 0 else ""
