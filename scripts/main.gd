@@ -1,11 +1,13 @@
 ## プレイ可能な画面。ノードはすべてコードで組み立てる(手書き.tscnの事故を避けるため)。
-## 見た目はまだ仮(色付き四角)。操作感の検証が目的のプロトタイプ。
+## 見た目は簡易シルエット(HorseSprite)。本格的な絵への差し替えは別途。
 extends Node2D
 
 const TRACK_PIXELS_PER_METER := 0.8
 const LANE_PIXELS := 60.0
 const TRACK_TOP := 220.0
-const HORSE_SIZE := Vector2(40, 26)
+const HORSE_SCALE := 0.6
+const HORSE_FEET_OFFSET := 18.0 * HORSE_SCALE  # 脚の付け根からの足先までの距離(縮尺後)
+const GAIT_SPEED_FACTOR := 0.55  # 速度(m/s)→脚を振る速さの係数
 const HORSE_COLORS := [
 	Color(0.95, 0.15, 0.15),  # プレイヤー: 赤
 	Color(0.95, 0.75, 0.1),   # CPU1: 黄
@@ -21,6 +23,7 @@ var player_lane := 1.0  # プレイヤーは1番ゲート(内側)スタート
 
 var horse_nodes: Array = []
 var hud_labels: Dictionary = {}
+var player_tag_label: Label = null
 var race_finished := false
 
 func _ready() -> void:
@@ -77,11 +80,18 @@ func _make_horse(p_name: String, jockey: String, spd: int, sta: int, pw: int, gu
 
 func _build_visuals() -> void:
 	for i in world.horses.size():
-		var box := ColorRect.new()
-		box.size = HORSE_SIZE
-		box.color = HORSE_COLORS[i % HORSE_COLORS.size()]
-		add_child(box)
-		horse_nodes.append(box)
+		var sprite := HorseSprite.new()
+		sprite.scale = Vector2(HORSE_SCALE, HORSE_SCALE)
+		add_child(sprite)
+		sprite.set_color(HORSE_COLORS[i % HORSE_COLORS.size()])
+		horse_nodes.append(sprite)
+
+		if i == 0:
+			var you_lbl := Label.new()
+			you_lbl.text = "YOU"
+			you_lbl.add_theme_color_override("font_color", HORSE_COLORS[0])
+			add_child(you_lbl)
+			player_tag_label = you_lbl
 
 func _build_hud() -> void:
 	var layer := CanvasLayer.new()
@@ -154,9 +164,13 @@ func _handle_input(delta: float) -> void:
 func _update_visuals() -> void:
 	for i in world.horses.size():
 		var h: HorseRuntime = world.horses[i]
-		var node: ColorRect = horse_nodes[i]
-		var pos := Vector2(h.position_m * TRACK_PIXELS_PER_METER, TRACK_TOP + h.lane_cur * LANE_PIXELS - HORSE_SIZE.y * 0.5)
-		node.position = pos
+		var sprite: HorseSprite = horse_nodes[i]
+		var pos := Vector2(h.position_m * TRACK_PIXELS_PER_METER, TRACK_TOP + h.lane_cur * LANE_PIXELS - HORSE_FEET_OFFSET)
+		sprite.position = pos
+		sprite.gait_speed = h.speed_mps * GAIT_SPEED_FACTOR
+
+		if i == 0 and player_tag_label != null:
+			player_tag_label.position = pos + Vector2(-10, -46)
 
 		var lbl: Label = hud_labels[i]
 		var tag := " (あなた)" if i == 0 else ""
