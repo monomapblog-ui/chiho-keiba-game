@@ -7,11 +7,7 @@ func _initialize() -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 12345
 
-	var track := TrackData.new()
-	track.track_name = "白鷺競馬場(テスト)"
-	track.distance_m = 1400.0
-	track.lane_count = 4
-	track.corner_zones = [Vector2(300, 500), Vector2(950, 1150)]
+	var track := TrackPresets.kochi()
 
 	var roster: Array[HorseStats] = []
 	roster.append(_make_horse("カゼノハヤテ", 72, 60, 68, 55, "NIGE"))
@@ -42,7 +38,7 @@ func _initialize() -> void:
 				ok = false
 				push_error("NaNを検出: %s" % h.stats.display_name)
 
-	print("=== レースシミュレーション結果(白鷺競馬場 1400m) ===")
+	print("=== レースシミュレーション結果(%s %.0fm) ===" % [track.track_name, track.distance_m])
 	if t >= max_t:
 		print("警告: 制限時間(%.0f秒)内に全馬が完走しませんでした" % max_t)
 		ok = false

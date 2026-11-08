@@ -23,11 +23,7 @@ func _ready() -> void:
 	_build_hud()
 
 func _build_world() -> void:
-	var track := TrackData.new()
-	track.track_name = "白鷺競馬場"
-	track.distance_m = 1400.0
-	track.lane_count = 4
-	track.corner_zones = [Vector2(300, 500), Vector2(950, 1150)]
+	var track := TrackPresets.kochi()
 
 	var roster: Array[HorseStats] = []
 	roster.append(_make_horse("カゼノハヤテ", "小峰 隼人", 72, 60, 68, 55, "NIGE"))

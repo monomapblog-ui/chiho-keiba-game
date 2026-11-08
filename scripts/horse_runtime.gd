@@ -26,11 +26,14 @@ func base_speed_mps() -> float:
 func accel_mps2() -> float:
 	return lerp(3.0, 6.5, stats.power / 100.0)
 
-func in_corner(track: TrackData) -> bool:
+## そのコーナーがどれだけきついか(外を回った時のスタミナ消費倍率)。
+## 直線なら0.0を返す。
+func corner_severity(track: TrackData) -> float:
+	var p := track.pos_in_lap(position_m)
 	for zone in track.corner_zones:
-		if position_m >= zone.x and position_m < zone.y:
-			return true
-	return false
+		if p >= zone["start"] and p < zone["end"]:
+			return zone.get("severity", 1.0)
+	return 0.0
 
 ## 1ステップ進める。
 ## effort: 0.3(抑える)〜1.0(全力)の継続操作値
@@ -62,10 +65,17 @@ func step(dt: float, effort: float, lane_target: float, track: TrackData, speed_
 	speed_mps = max(speed_mps, 0.0)
 
 	# スタミナ消費。コーナーで外(3,4レーン)を回ると消費が増える
+	var severity := corner_severity(track)
 	var corner_penalty := 1.0
-	if in_corner(track) and lane_cur >= 3.0:
-		corner_penalty = 1.4
-	var drain := (effort * effort) * 1.8 * corner_penalty * dt
+	if severity > 0.0 and lane_cur >= 3.0:
+		corner_penalty = severity
+
+	# インコースの砂が深い等、特定コースの特徴によるペナルティ
+	var inner_penalty := 1.0
+	if track.inner_lane_penalty > 0.0 and lane_cur < 1.5:
+		inner_penalty = 1.0 + track.inner_lane_penalty
+
+	var drain := (effort * effort) * 1.8 * corner_penalty * inner_penalty * dt
 	stamina_cur = max(stamina_cur - drain, 0.0)
 	if effort <= 0.4:
 		stamina_cur = min(stamina_cur + 2.0 * dt, stamina_max)
