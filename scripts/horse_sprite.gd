@@ -1,72 +1,61 @@
-## 簡易的に「馬らしい」見た目にするための、図形だけで組んだシルエット。
-## 画像素材はまだ無いので、ポリゴンを組み合わせて側面から見た馬の形を作り、
-## 脚を振る簡単なアニメーションを付けている。本格的な絵への差し替えは別途。
+## 馬の見た目。OpenGameArt の CC0 スプライト("pixel-horse" by alizard,
+## https://opengameart.org/content/pixel-horse)を使った走りアニメーション。
+## 素材自体に色の違いはないため、識別用に上に小さい色付きの旗を立てている。
 class_name HorseSprite
 extends Node2D
 
-## 脚を振る速さ。馬の実際の速度(m/s)に応じて外側から設定する。
+const SHEET_PATH := "res://assets/sprites/horse_run_cycle.png"
+const FRAME_SIZE := Vector2i(82, 66)
+const FRAME_COUNT := 5
+
+## 脚の動く速さの基準。馬の実際の速度(m/s)に応じて外側から設定する。
 var gait_speed: float = 0.0
 
-var _gait_phase: float = 0.0
-var _leg_front: Polygon2D
-var _leg_back: Polygon2D
-var _parts: Array[Polygon2D] = []
+var _anim: AnimatedSprite2D
+var _flag: Polygon2D
+var _pending_color := Color.WHITE
+
+static var _shared_frames: SpriteFrames = null
 
 func _ready() -> void:
-	# 脚(後ろ脚を先に描いて、前脚・胴体・首の後ろに隠れるようにする)
-	_leg_back = _make_poly(_leg_shape())
-	_leg_back.position = Vector2(-13, 0)
-	add_child(_leg_back)
+	_anim = AnimatedSprite2D.new()
+	_anim.sprite_frames = _get_shared_frames()
+	_anim.animation = "run"
+	_anim.play()
+	_anim.flip_h = true  # 素材は左向きのため、右(ゴール方向)向きに反転
+	add_child(_anim)
 
-	_leg_front = _make_poly(_leg_shape())
-	_leg_front.position = Vector2(13, 0)
-	add_child(_leg_front)
-
-	var body := _make_poly(_ellipse_points(22.0, 12.0, Vector2.ZERO, 16))
-	add_child(body)
-
-	var neck := _make_poly(PackedVector2Array([
-		Vector2(12, -4), Vector2(24, -20), Vector2(32, -25), Vector2(40, -19),
-		Vector2(38, -10), Vector2(28, -3), Vector2(16, 2),
-	]))
-	add_child(neck)
-
-	var ear := _make_poly(PackedVector2Array([
-		Vector2(31, -24), Vector2(33, -31), Vector2(36, -23),
-	]))
-	add_child(ear)
-
-	var tail := _make_poly(PackedVector2Array([
-		Vector2(-21, -5), Vector2(-30, -13), Vector2(-27, 3), Vector2(-18, 3),
-	]))
-	add_child(tail)
-
-	_parts = [_leg_back, _leg_front, body, neck, ear, tail]
+	_flag = Polygon2D.new()
+	_flag.polygon = PackedVector2Array([
+		Vector2(-10, -46), Vector2(10, -46), Vector2(10, -38), Vector2(-10, -38),
+	])
+	_flag.color = _pending_color
+	add_child(_flag)
 
 func set_color(c: Color) -> void:
-	for p in _parts:
-		p.color = c
+	_pending_color = c
+	if _flag:
+		_flag.color = c
 
-func _make_poly(points: PackedVector2Array) -> Polygon2D:
-	var poly := Polygon2D.new()
-	poly.polygon = points
-	return poly
+func _process(_delta: float) -> void:
+	if _anim:
+		_anim.speed_scale = clamp(gait_speed, 0.2, 3.0)
 
-func _ellipse_points(rx: float, ry: float, center: Vector2, segments: int) -> PackedVector2Array:
-	var pts := PackedVector2Array()
-	for i in segments:
-		var a := (TAU / float(segments)) * i
-		pts.append(center + Vector2(cos(a) * rx, sin(a) * ry))
-	return pts
+static func _get_shared_frames() -> SpriteFrames:
+	if _shared_frames != null:
+		return _shared_frames
 
-func _leg_shape() -> PackedVector2Array:
-	# 付け根(y=0、胴体側)から足先(y=18)に伸びる細い脚。回転の軸は付け根側。
-	return PackedVector2Array([
-		Vector2(-2, 0), Vector2(2, 0), Vector2(2, 18), Vector2(-2, 18),
-	])
+	var sheet: Texture2D = load(SHEET_PATH)
+	var frames := SpriteFrames.new()
+	frames.add_animation("run")
+	frames.set_animation_speed("run", 10.0)
+	frames.set_animation_loop("run", true)
 
-func _process(delta: float) -> void:
-	_gait_phase += delta * gait_speed
-	var swing := sin(_gait_phase) * 20.0
-	_leg_front.rotation = deg_to_rad(swing)
-	_leg_back.rotation = deg_to_rad(-swing)
+	for i in FRAME_COUNT:
+		var atlas := AtlasTexture.new()
+		atlas.atlas = sheet
+		atlas.region = Rect2(Vector2(i * FRAME_SIZE.x, 0), Vector2(FRAME_SIZE))
+		frames.add_frame("run", atlas)
+
+	_shared_frames = frames
+	return frames

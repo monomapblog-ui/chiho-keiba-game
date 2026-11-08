@@ -5,9 +5,9 @@ extends Node2D
 const TRACK_PIXELS_PER_METER := 0.8
 const LANE_PIXELS := 60.0
 const TRACK_TOP := 220.0
-const HORSE_SCALE := 0.6
-const HORSE_FEET_OFFSET := 18.0 * HORSE_SCALE  # 脚の付け根からの足先までの距離(縮尺後)
-const GAIT_SPEED_FACTOR := 0.55  # 速度(m/s)→脚を振る速さの係数
+const HORSE_SCALE := 0.5
+const HORSE_FEET_OFFSET := 33.0 * HORSE_SCALE  # スプライトは中心基準なので、半分の高さだけ上にずらして足元を合わせる
+const GAIT_SPEED_FACTOR := 0.08  # 速度(m/s)→アニメーション再生速度の係数
 const HORSE_COLORS := [
 	Color(0.95, 0.15, 0.15),  # プレイヤー: 赤
 	Color(0.95, 0.75, 0.1),   # CPU1: 黄
@@ -170,7 +170,7 @@ func _update_visuals() -> void:
 		sprite.gait_speed = h.speed_mps * GAIT_SPEED_FACTOR
 
 		if i == 0 and player_tag_label != null:
-			player_tag_label.position = pos + Vector2(-10, -46)
+			player_tag_label.position = pos + Vector2(-12, -64)
 
 		var lbl: Label = hud_labels[i]
 		var tag := " (あなた)" if i == 0 else ""
