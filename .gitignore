@@ -1,0 +1,10 @@
+# Godot 4 import cache (再生成されるので追跡しない)
+.godot/
+
+# エクスポート成果物
+export_presets.cfg
+builds/
+
+# OS
+.DS_Store
+Thumbs.db
