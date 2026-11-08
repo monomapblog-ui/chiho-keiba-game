@@ -15,10 +15,11 @@ var finished: bool = false
 var finish_time: float = -1.0
 var rank: int = -1
 
-func _init(p_stats: HorseStats) -> void:
+func _init(p_stats: HorseStats, start_lane: float = 2.0) -> void:
 	stats = p_stats
 	stamina_max = lerp(60.0, 100.0, stats.stamina / 100.0)
 	stamina_cur = stamina_max
+	lane_cur = start_lane
 
 func base_speed_mps() -> float:
 	return lerp(15.0, 19.0, stats.speed / 100.0)

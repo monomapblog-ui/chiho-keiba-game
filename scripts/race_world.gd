@@ -13,8 +13,10 @@ var finish_order: Array[int] = []
 
 func _init(p_track: TrackData, roster: Array[HorseStats]) -> void:
 	track = p_track
-	for s in roster:
-		horses.append(HorseRuntime.new(s))
+	for i in roster.size():
+		# 発走ゲート番号をそのままスタート時のレーンにする(1番枠は内側、など)
+		var gate: float = 1.0 + float(i % track.lane_count)
+		horses.append(HorseRuntime.new(roster[i], gate))
 
 func all_finished() -> bool:
 	for h in horses:

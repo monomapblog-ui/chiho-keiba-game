@@ -17,10 +17,9 @@ var world: RaceWorld
 var rng := RandomNumberGenerator.new()
 
 var player_effort := 0.65
-var player_lane := 2.0
+var player_lane := 1.0  # プレイヤーは1番ゲート(内側)スタート
 
 var horse_nodes: Array = []
-var horse_name_labels: Array = []
 var hud_labels: Dictionary = {}
 var race_finished := false
 
@@ -84,12 +83,6 @@ func _build_visuals() -> void:
 		add_child(box)
 		horse_nodes.append(box)
 
-		var name_lbl := Label.new()
-		name_lbl.text = world.horses[i].stats.display_name
-		name_lbl.add_theme_color_override("font_color", box.color)
-		add_child(name_lbl)
-		horse_name_labels.append(name_lbl)
-
 func _build_hud() -> void:
 	var layer := CanvasLayer.new()
 	add_child(layer)
@@ -98,6 +91,7 @@ func _build_hud() -> void:
 	for i in world.horses.size():
 		var lbl := Label.new()
 		lbl.position = Vector2(10, y)
+		lbl.add_theme_color_override("font_color", HORSE_COLORS[i % HORSE_COLORS.size()])
 		layer.add_child(lbl)
 		hud_labels[i] = lbl
 		y += 20.0
@@ -163,9 +157,6 @@ func _update_visuals() -> void:
 		var node: ColorRect = horse_nodes[i]
 		var pos := Vector2(h.position_m * TRACK_PIXELS_PER_METER, TRACK_TOP + h.lane_cur * LANE_PIXELS - HORSE_SIZE.y * 0.5)
 		node.position = pos
-
-		var name_lbl: Label = horse_name_labels[i]
-		name_lbl.position = pos + Vector2(0, -18)
 
 		var lbl: Label = hud_labels[i]
 		var tag := " (あなた)" if i == 0 else ""
