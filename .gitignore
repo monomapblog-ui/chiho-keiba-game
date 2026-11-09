@@ -1,9 +1,20 @@
-# Godot 4 import cache (再生成されるので追跡しない)
-.godot/
+# --- Unity (unity/ 以下にプロジェクト本体ができたら有効) ---
+unity/Library/
+unity/Temp/
+unity/Obj/
+unity/Build/
+unity/Builds/
+unity/Logs/
+unity/UserSettings/
+unity/MemoryCaptures/
+unity/*.csproj
+unity/*.sln
+unity/.vs/
 
-# エクスポート成果物
-export_presets.cfg
-builds/
+# --- Godot archive (念のため残す) ---
+godot-prototype-archive/.godot/
+godot-prototype-archive/export_presets.cfg
+godot-prototype-archive/builds/
 
 # OS
 .DS_Store
