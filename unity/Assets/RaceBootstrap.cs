@@ -8,6 +8,16 @@ using UnityEngine;
 /// 差し替えは別途。カメラはプレイヤーを追従するシンプルなチェイスカメラ。
 public class RaceBootstrap : MonoBehaviour
 {
+    [Header("馬の3Dモデル(任意)")]
+    [Tooltip("インポートした馬のモデル(例: Horse.fbx)をここにドラッグすると、プレースホルダーの箱の代わりに使われます。空のままなら箱のままです。")]
+    [SerializeField] private GameObject horsePrefab;
+    [Tooltip("モデルの大きさがおかしい場合に調整する倍率")]
+    [SerializeField] private float horseModelScale = 1f;
+    [Tooltip("モデルが進行方向(右)を向いていない場合に調整する角度(度)")]
+    [SerializeField] private float horseModelYRotation = 0f;
+    [Tooltip("モデルの足が地面に埋まる/浮く場合に調整する高さ")]
+    [SerializeField] private float horseModelYOffset = 0f;
+
     private const float TrackUnitsPerMeter = 0.05f; // 1400m -> 70 Unityユニット
     private const float LaneSpacing = 2.5f;
 
@@ -70,12 +80,29 @@ public class RaceBootstrap : MonoBehaviour
     {
         for (int i = 0; i < world.Horses.Count; i++)
         {
-            // 本物の3Dモデルへの差し替えは別途。今は進行方向に長い箱で代用。
-            var go = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            GameObject go;
+            if (horsePrefab != null)
+            {
+                go = Instantiate(horsePrefab);
+                go.transform.localScale = Vector3.one * horseModelScale;
+            }
+            else
+            {
+                // 本物の3Dモデルが未設定な間は、進行方向に長い箱で代用。
+                go = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                go.transform.localScale = new Vector3(1.2f, 0.6f, 0.5f);
+                go.GetComponent<Renderer>().material = MakeColorMaterial(HorseColors[i % HorseColors.Length]);
+            }
             go.name = world.Horses[i].Stats.DisplayName;
-            go.transform.localScale = new Vector3(1.2f, 0.6f, 0.5f);
-            go.GetComponent<Renderer>().material = MakeColorMaterial(HorseColors[i % HorseColors.Length]);
             horseObjects.Add(go);
+
+            // 誰がどの馬か分かるよう、頭上に色付きの旗を立てる(本体の色は変えない)
+            var flag = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            flag.name = go.name + "_Flag";
+            flag.transform.SetParent(go.transform, false);
+            flag.transform.localPosition = Vector3.up * (horsePrefab != null ? 2.2f : 1.2f);
+            flag.transform.localScale = new Vector3(0.4f, 0.4f, 0.4f);
+            flag.GetComponent<Renderer>().material = MakeColorMaterial(HorseColors[i % HorseColors.Length]);
         }
     }
 
@@ -172,7 +199,8 @@ public class RaceBootstrap : MonoBehaviour
             var go = horseObjects[i];
             float x = h.PositionM * TrackUnitsPerMeter;
             float z = (h.LaneCur - (world.Track.LaneCount + 1) / 2f) * LaneSpacing;
-            go.transform.position = new Vector3(x, 0.3f, z);
+            go.transform.position = new Vector3(x, 0.3f + horseModelYOffset, z);
+            go.transform.rotation = Quaternion.Euler(0f, horseModelYRotation, 0f);
         }
 
         if (cam != null && horseObjects.Count > 0)
